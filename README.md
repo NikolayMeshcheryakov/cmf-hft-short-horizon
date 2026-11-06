@@ -1,88 +1,79 @@
-# Краткосрочный прогноз доходности перпетуалов Binance — решение
+# Short-Term Return Prediction for Binance Perpetual Futures
 
-Каждые 500 мс — прогноз лог-доходности BTCUSDT, ETHUSDT, SOLUSDT, 1000PEPEUSDT (перпетуалы) на 500 мс, 2 с и 8 с.
+Every 500 ms, the model predicts log returns of BTCUSDT, ETHUSDT, SOLUSDT and 1000PEPEUSDT perpetuals over 500 ms, 2 s and 8 s horizons.
 
-## Запуск
+## Running
+
+Requires Python 3.12+ (uv will fetch it if missing).
 
 ```
 uv sync
 uv run python predict.py --data-dir <DIR> --date <YYYY-MM-DD> --out <PATH>.parquet
 ```
 
-Модель по умолчанию — `model.json` рядом с `predict.py` (ансамбль; участники — в `members/`).
-Нужны только запрошенный день и предыдущий (прогрев окон). Один день считается ≈ 1.5 мин на 10 ядрах.
-torch для прогноза не нужен: обе нейросети считаются на numpy.
+The default model is `model.json` next to `predict.py` (an ensemble; its members are in `members/`).
+Only the requested day and the preceding day are needed (warm-up of rolling windows). One day takes about 1.5 minutes on 10 CPU cores.
+No GPU or torch is needed for prediction: both neural networks run in numpy.
 
-## Подход
+## Approach
 
-**Признаки (76, все строго причинные — в момент t только данные с ts ≤ t):**
-- стакан своего перпетуала: дисбаланс лучших котировок и корзин глубины, микроцена, спред, их динамика;
-- поток сделок (покупки − продажи) и OFI на окнах от 0.5 с до минут и длиннее, интенсивность торговли;
-- доходности своего инструмента и опережающих рынков (BTC/ETH для остальных) на нескольких окнах;
-- спот и второй рынок (1000PEPEUSDC): разрыв цен в общей валюте через курс стейблкоина, его отклонение
-  от скользящего среднего, свежесть котировок; волатильность и взаимодействия признаков с ней.
+**Features (76, all strictly causal: a prediction at time t uses only data with ts ≤ t):**
+- the perpetual's own order book: best-quote and depth-bucket imbalances, microprice, spread, and their dynamics;
+- trade flow (buy − sell volume) and order flow imbalance over windows from 0.5 s to several minutes and longer, trading intensity;
+- returns of the instrument itself and of leading markets (BTC/ETH for the others) over several windows;
+- spot markets and the second perpetual (1000PEPEUSDC): price gaps in a common currency via the stablecoin rate, their deviation from a moving average, quote freshness; volatility and feature interactions with it.
 
-Из 90 построенных признаков 14 выкинуты по результатам последовательного выкидывания групп
-(сравнение по дням с бутстрепом).
+Of 90 engineered features, 14 were removed after group-wise ablation (day-level comparison with bootstrap).
 
-**Модели (6 участников ансамбля):**
-| участник | что это |
+**Models (6 ensemble members):**
+
+| member | description |
 |---|---|
-| LightGBM | своя модель на каждый инструмент × горизонт; параметры подобраны Optuna по качеству всего ансамбля |
-| общий LightGBM | одна модель на 4 инструмента (номер инструмента — категориальный признак) |
-| CatBoost | на каждый инструмент × горизонт |
-| Ridge | линейная регрессия, таргет дня нормирован на его std |
-| нейросеть (MLP) | 256-128-64, SiLU, Huber, одна на все инструменты и горизонты |
-| GRU | рекуррентная сеть на последовательности признаков с шагом 2.5 с; состояние — с начала дня |
+| LightGBM | one model per instrument × horizon; hyperparameters tuned with Optuna on the score of the whole ensemble |
+| pooled LightGBM | one model for all 4 instruments (instrument id as a categorical feature) |
+| CatBoost | one model per instrument × horizon |
+| Ridge | linear regression |
+| MLP | 256-128-64, SiLU, one network for all instruments and horizons |
+| GRU | recurrent network over the feature sequence with a 2.5 s step; state starts at the beginning of the day |
 
-Лосс — Huber, таргет каждого дня делится на его std (дни весят одинаково). Ранняя остановка — по последним
-10% дней трейна.
+The target of each day is divided by its standard deviation, so all days carry equal weight. Tree models and neural networks use the Huber loss. Early stopping uses the last 10% of training days.
 
-**Ансамбль:** прогноз участника делится на его std, веса ≥ 0 с суммой 1 подбираются отдельно для каждой пары
-«инструмент × горизонт» сеткой с шагом 0.05 по точной метрике (средняя дневная корреляция). Вид весов
-(общие / по горизонту / по паре) выбран честно: подбор на чётных днях, проверка на нечётных и наоборот.
+**Ensemble:** each member's prediction is divided by its standard deviation. Weights (≥ 0, summing to 1) are fitted separately for each instrument × horizon pair by grid search with step 0.05 on the exact metric (mean daily correlation). The weighting scheme (global / per horizon / per pair) was chosen honestly: fit on even days, evaluate on odd days, and vice versa.
 
-## Результаты
+## Results
 
-Модели обучены на трейне (15.09.2025–14.07.2026), проверены на валидации (15.07–14.09.2026); метрика задания.
-Трейн — те же дни, на которых модели учились (каждый 3-й день, каждая 5-я точка сетки).
+Models were trained on the training period (2025-09-15 to 2026-07-14) and evaluated on the validation period (2026-07-15 to 2026-09-14) with the competition metric.
+"Train" is measured on the same days the models were trained on (every 3rd day, every 5th grid point).
 
-| модель | трейн | валидация |
+| model | train | validation |
 |---|---|---|
-| baseline (Ridge на дисбалансе лучших котировок) | 0.1991 | 0.1838 |
-| Ridge, 76 признаков | 0.2248 | 0.2130 |
-| нейросеть (MLP) | 0.2398 | 0.2245 |
+| baseline (OLS on best bid/ask queue imbalance) | 0.1991 | 0.1838 |
+| Ridge, 76 features | 0.2248 | 0.2130 |
+| MLP | 0.2398 | 0.2245 |
 | GRU | 0.2398 | 0.2253 |
 | CatBoost | 0.2442 | 0.2285 |
-| общий LightGBM | 0.2436 | 0.2304 |
+| pooled LightGBM | 0.2436 | 0.2304 |
 | LightGBM | 0.2475 | 0.2308 |
-| **ансамбль (6 моделей)** | **0.2488** | **0.2346** |
+| **ensemble (6 models)** | **0.2488** | **0.2346** |
 
-Валидация по парам (ансамбль):
+Validation by pair (ensemble):
 
-| | 500 мс | 2 с | 8 с |
+| | 500 ms | 2 s | 8 s |
 |---|---|---|---|
 | BTC | 0.3050 | 0.2728 | 0.2199 |
 | ETH | 0.2868 | 0.2435 | 0.1789 |
 | SOL | 0.2732 | 0.2599 | 0.2091 |
 | PEPE | 0.2196 | 0.2017 | 0.1445 |
 
-- Разрыв «трейн − валидация» одинаковый у ансамбля (0.014) и у линейного baseline (0.015): переобучения нет,
-  период валидации просто труднее (в частности неделя 19–25.08, когда дальние горизонты провалились у всех инструментов).
-- Модели, параметры и веса ансамбля выбирались на отложенной части трейна (01.05–14.07); валидация для выбора
-  не использовалась.
-- **Сданная модель** — тот же ансамбль, переобученный на трейне + валидации (15.09.2025–14.09.2026), как разрешено
-  условием.
-- **Причинность:** проверка по той же схеме, что у организаторов (обрезка данных в момент T, прогнозы до T должны
-  совпасть), побитно, на реальных днях, включая «опасные» T — ровно в момент изменения котировок любого рынка
-  и за 1 мс до него. Отдельно проверен каждый признак. Утечек не найдено.
+- The train − validation gap is the same for the ensemble (0.014) and for the linear baseline (0.015). This points to a harder validation period rather than overfitting; in particular, during the week of Aug 19–25 the longer horizons dropped for all instruments.
+- Models, hyperparameters and ensemble weights were selected on a held-out part of the training period (2026-05-01 to 2026-07-14); the validation period was not used for selection.
+- **The submitted model** is the same ensemble retrained on training + validation data (2025-09-15 to 2026-09-14), as allowed by the rules.
+- **Causality:** checked with the same procedure the organizers use (truncate the data at time T; predictions for t ≤ T must match), bit-for-bit, on real days, including "dangerous" T values: exactly at, and 1 ms before, a quote change in any market. Every feature was also checked individually. No leaks were found.
 
-## Файлы
+## Files
 
-- `predict.py` — прогноз; `common.py` — файл организаторов без изменений;
-- `features.py`, `features_v2.py`, `features_v3.py` — признаки; `fversion.py` — отпечатки версии признаков
-  (модель не загрузится с другой версией кода признаков);
-- `mlp.py`, `gru.py` — прогноз нейросетей на numpy (и их обучение);
-- `model.json`, `members/` — веса ансамбля;
-- остальное (если есть) — код обучения и проверок: `cache.py` (кэш признаков), `experiment.py` (обучение и оценка),
-  `ensemble.py` (подбор весов и сборка), `tune.py` (Optuna), `causality_check.py`, `selftest.py`.
+- `predict.py`: prediction; `common.py`: the organizers' file, unchanged;
+- `features.py`, `features_v2.py`, `features_v3.py`: features; `fversion.py`: feature-code fingerprints (a model will not load with a different version of the feature code);
+- `mlp.py`, `gru.py`: numpy inference for the neural networks (and their training);
+- `model.json`, `members/`: ensemble weights;
+- the rest: training and validation code: `cache.py` (feature cache), `experiment.py` (training and evaluation), `ensemble.py` (weight fitting and assembly), `tune.py` (Optuna), `report.py` (train scores), `causality_check.py`, `selftest.py`.
