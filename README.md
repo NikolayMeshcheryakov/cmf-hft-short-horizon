@@ -23,7 +23,7 @@ No GPU or torch is needed for prediction: both neural networks run in numpy.
 - returns of the instrument itself and of leading markets (BTC/ETH for the others) over several windows;
 - spot markets and the second perpetual (1000PEPEUSDC): price gaps in a common currency via the stablecoin rate, their deviation from a moving average, quote freshness; volatility and feature interactions with it.
 
-Of 90 engineered features, 14 were removed after group-wise ablation (day-level comparison with bootstrap).
+Of 83 engineered features, 7 were removed after group-wise ablation with LightGBM (day-level comparison with bootstrap): spread in ticks, the wide-spread flag, and the deviation, age and flow of the USDC/FDUSD rates.
 
 **Models (6 ensemble members):**
 
