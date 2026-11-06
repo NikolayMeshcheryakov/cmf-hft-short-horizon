@@ -1,0 +1,156 @@
+{
+ "type": "ensemble",
+ "members": [
+  {
+   "path": "members/0/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 0.7841029325837467,
+     "y_2s": 1.0158141570221826,
+     "y_8s": 1.7652694407046017
+    },
+    "ETHUSDT_PERP": {
+     "y_500ms": 0.8562123243430508,
+     "y_2s": 0.9404543005463313,
+     "y_8s": 1.2389951847761653
+    },
+    "SOLUSDT_PERP": {
+     "y_500ms": 1.523189969577845,
+     "y_2s": 1.6186796625355273,
+     "y_8s": 1.7385726056086463
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 1.8205271604405595,
+     "y_2s": 2.3745032679028224,
+     "y_8s": 2.6261060302212553
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_lgbm\\model.json",
+   "type": "lgbm"
+  },
+  {
+   "path": "members/1/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 4958.360065377036,
+     "y_2s": 2568.72941806152,
+     "y_8s": 6556.4179626915675
+    },
+    "ETHUSDT_PERP": {
+     "y_500ms": 7208.357072322727,
+     "y_2s": 6151.093970536009,
+     "y_8s": 11130.159016267673
+    },
+    "SOLUSDT_PERP": {
+     "y_500ms": 5888.690817545225,
+     "y_2s": 1623.1466171710726,
+     "y_8s": 5398.770018193184
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 5067.7641738594875,
+     "y_2s": 2896.602777798121,
+     "y_8s": 6302.6418346725295
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_ridge\\model.json",
+   "type": "ridge"
+  },
+  {
+   "path": "members/2/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 0.25580457142536994,
+     "y_2s": 0.7255999058316432
+    },
+    "ETHUSDT_PERP": {
+     "y_2s": 0.26653421766110696
+    },
+    "SOLUSDT_PERP": {
+     "y_2s": 0.5471073429912894
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 0.8356026269527986,
+     "y_2s": 0.912399367282443,
+     "y_8s": 0.40349834434702236
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_cb\\model.json",
+   "type": "catboost"
+  },
+  {
+   "path": "members/3/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 1.3781037756956254
+    },
+    "ETHUSDT_PERP": {
+     "y_500ms": 1.3332089555294508,
+     "y_2s": 0.8013542825503411,
+     "y_8s": 0.9882607459130663
+    },
+    "SOLUSDT_PERP": {
+     "y_500ms": 1.4671215733553464,
+     "y_2s": 0.8285936705560427,
+     "y_8s": 1.3243721836021987
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 0.290216879099789,
+     "y_8s": 0.40616105295464067
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_pool\\model.json",
+   "type": "lgbm_pool"
+  },
+  {
+   "path": "members/4/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 1.0250769749199573,
+     "y_2s": 0.4769624060945813,
+     "y_8s": 0.27732735301941325
+    },
+    "ETHUSDT_PERP": {
+     "y_500ms": 1.0208213990049266,
+     "y_2s": 0.514498979737847
+    },
+    "SOLUSDT_PERP": {
+     "y_500ms": 0.2604174953337686
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 0.8536847673002371,
+     "y_2s": 0.2954927647062425
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_mlp\\model.json",
+   "type": "mlp"
+  },
+  {
+   "path": "members/5/model.json",
+   "coef": {
+    "BTCUSDT_PERP": {
+     "y_500ms": 1.168227054980561,
+     "y_2s": 1.975337855531064,
+     "y_8s": 1.9802052504794223
+    },
+    "ETHUSDT_PERP": {
+     "y_500ms": 1.1276447645573173,
+     "y_2s": 1.576318908530484,
+     "y_8s": 1.3414312487782634
+    },
+    "SOLUSDT_PERP": {
+     "y_500ms": 1.2674409293288986,
+     "y_2s": 1.6683568031632507,
+     "y_8s": 1.3685272522784124
+    },
+    "1000PEPEUSDT_PERP": {
+     "y_500ms": 0.831124256756014,
+     "y_2s": 1.3221141809174248,
+     "y_8s": 1.6206667234428758
+    }
+   },
+   "source": "D:\\hft\\hft_pipeline\\hft_pipeline\\models\\fin_gru\\model.json",
+   "type": "gru"
+  }
+ ],
+ "weights_file": "D:\\hft\\hft_pipeline\\hft_pipeline\\results\\ens15_c_weights.json"
+}
